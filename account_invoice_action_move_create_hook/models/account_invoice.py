@@ -44,8 +44,10 @@ class AccountInvoice(models.Model):
 
             company_currency = inv.company_id.currency_id
             # create the analytical lines, one move line per invoice line
+            # TODO:Performance 0.17 seconds
             iml = inv._get_analytic_lines()
             # check if taxes are all computed
+            # TODO:Performance 0.17 seconds
             compute_taxes = account_invoice_tax.\
                 compute(inv.with_context(lang=inv.partner_id.lang))
             inv.check_tax_lines(compute_taxes)
@@ -118,7 +120,8 @@ class AccountInvoice(models.Model):
                         'name': name,
                         'price': t[1],
                         'account_id': inv.account_id.id,
-                        'date_maturity': t[0],
+                        'date_maturity': inv.date_due or t[0],  # kittiu
+                        # 'date_maturity': t[0]
                         'amount_currency': diff_currency and amount_currency,
                         'currency_id': diff_currency and inv.currency_id.id,
                         'ref': ref,
@@ -175,8 +178,8 @@ class AccountInvoice(models.Model):
             ctx['invoice'] = inv
             ctx_nolang = ctx.copy()
             ctx_nolang.pop('lang', None)
+            # TODO:Performance 1.5 seconds
             move = account_move.with_context(ctx_nolang).create(move_vals)
-
             # make the invoice point to that move
             vals = {
                 'move_id': move.id,
@@ -189,6 +192,7 @@ class AccountInvoice(models.Model):
             # used if you want to get the same
             # account move reference when creating the
             # same invoice after a cancelled one:
-            move.post()
+            if move.state != 'posted':
+                move.post()
         self._log_event()
         return True

@@ -291,6 +291,8 @@ class ConnectorRunner(object):
     def get_db_names(self):
         if openerp.tools.config['db_name']:
             db_names = openerp.tools.config['db_name'].split(',')
+            # kittiu, ensure database name has no space
+            # db_names = [x.strip() for x in db_names]
         else:
             db_names = openerp.service.db.exp_list(True)
         dbfilter = openerp.tools.config['dbfilter']
